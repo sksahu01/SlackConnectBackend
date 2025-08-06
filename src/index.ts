@@ -16,7 +16,7 @@ import { errorHandler } from './middleware/errorHandler';
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = parseInt(process.env.PORT || '10000', 10);
 
 // Rate limiting
 const limiter = rateLimit({
@@ -64,16 +64,23 @@ app.use('*', (req, res) => {
 // Start server
 async function startServer() {
     try {
+        console.log(`🔄 Starting server on port ${PORT}...`);
+        console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+
         // Connect to MongoDB
+        console.log(`🔄 Connecting to MongoDB...`);
         await connectDB();
+        console.log(`✅ MongoDB connected successfully`);
 
         // Setup message scheduler
         setupScheduler();
 
-        app.listen(PORT, () => {
+        app.listen(PORT, '0.0.0.0', () => {
             console.log(`🚀 Server running on port ${PORT}`);
+            console.log(`🌐 Server listening on 0.0.0.0:${PORT}`);
             console.log(`📊 Health check: https://slackconnectbackend.onrender.com/health`);
             console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`✅ Server is ready to accept connections`);
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error);
