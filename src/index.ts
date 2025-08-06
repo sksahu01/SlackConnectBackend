@@ -36,6 +36,15 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Simple root endpoint for Render port detection
+app.get('/', (req: express.Request, res: express.Response) => {
+    res.status(200).json({
+        service: 'Slack Connect Backend',
+        status: 'running',
+        timestamp: new Date().toISOString(),
+    });
+});
+
 // Health check endpoint
 app.get('/health', (req: express.Request, res: express.Response) => {
     res.status(200).json({
@@ -66,6 +75,8 @@ async function startServer() {
     try {
         console.log(`🔄 Starting server on port ${PORT}...`);
         console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`🔌 Port from ENV: ${process.env.PORT}`);
+        console.log(`🔌 Using PORT: ${PORT}`);
 
         // Connect to MongoDB
         console.log(`🔄 Connecting to MongoDB...`);
@@ -75,12 +86,18 @@ async function startServer() {
         // Setup message scheduler
         setupScheduler();
 
-        app.listen(PORT, '0.0.0.0', () => {
+        server = app.listen(PORT, '0.0.0.0', () => {
             console.log(`🚀 Server running on port ${PORT}`);
             console.log(`🌐 Server listening on 0.0.0.0:${PORT}`);
             console.log(`📊 Health check: https://slackconnectbackend.onrender.com/health`);
             console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
             console.log(`✅ Server is ready to accept connections`);
+        });
+
+        // Handle server errors
+        server.on('error', (error: any) => {
+            console.error('❌ Server error:', error);
+            process.exit(1);
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error);
@@ -101,14 +118,30 @@ process.on('uncaughtException', (err: Error) => {
 });
 
 // Graceful shutdown
+let server: any = null;
+
 process.on('SIGTERM', () => {
     console.log('👋 SIGTERM received, shutting down gracefully');
-    process.exit(0);
+    if (server) {
+        server.close(() => {
+            console.log('✅ Server closed');
+            process.exit(0);
+        });
+    } else {
+        process.exit(0);
+    }
 });
 
 process.on('SIGINT', () => {
     console.log('👋 SIGINT received, shutting down gracefully');
-    process.exit(0);
+    if (server) {
+        server.close(() => {
+            console.log('✅ Server closed');
+            process.exit(0);
+        });
+    } else {
+        process.exit(0);
+    }
 });
 
 startServer();
