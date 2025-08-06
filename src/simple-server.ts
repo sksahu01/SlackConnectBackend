@@ -34,9 +34,10 @@ app.use(helmet({
 app.use(morgan('combined'));
 app.use(limiter);
 app.use(cors({
-    origin: function (origin, callback) {
+    origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
         const allowedOrigins = [
             'http://localhost:3000',
+            'https://slackconnectfrontend.vercel.app',
             'http://127.0.0.1:3000',
             process.env.FRONTEND_URL
         ].filter(Boolean) as string[];
@@ -58,7 +59,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (req: express.Request, res: express.Response) => {
     res.status(200).json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
@@ -68,7 +69,7 @@ app.get('/health', (req, res) => {
 });
 
 // Root endpoint - API information
-app.get('/', (req, res) => {
+app.get('/', (req: express.Request, res: express.Response) => {
     res.status(200).json({
         name: 'Slack Connect API',
         version: '1.0.0',
@@ -87,7 +88,7 @@ app.get('/', (req, res) => {
 });
 
 // Slack OAuth endpoints (simplified for testing)
-app.get('/auth/slack', (req, res) => {
+app.get('/auth/slack', (req: express.Request, res: express.Response) => {
     const clientId = process.env.SLACK_CLIENT_ID;
     const redirectUri = process.env.SLACK_REDIRECT_URI;
     const state = Math.random().toString(36).substring(7);
@@ -116,7 +117,7 @@ app.get('/auth/slack', (req, res) => {
     });
 });
 
-app.get('/auth/slack/callback', (req, res) => {
+app.get('/auth/slack/callback', (req: express.Request, res: express.Response) => {
     const { code, state } = req.query;
 
     if (!code) {
@@ -133,7 +134,7 @@ app.get('/auth/slack/callback', (req, res) => {
 });
 
 // Handle frontend callback redirect
-app.get('/auth/callback', (req, res) => {
+app.get('/auth/callback', (req: express.Request, res: express.Response) => {
     const { code, state, error } = req.query;
 
     if (error) {
@@ -156,7 +157,7 @@ app.get('/auth/callback', (req, res) => {
 });
 
 // Test endpoint for sending messages
-app.post('/slack/send', (req, res) => {
+app.post('/slack/send', (req: express.Request, res: express.Response) => {
     const { channel, message } = req.body;
 
     if (!channel || !message) {
@@ -178,7 +179,7 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
 });
 
 // 404 handler
-app.use('*', (req, res) => {
+app.use('*', (req: express.Request, res: express.Response) => {
     res.status(404).json({
         error: 'Route not found',
         message: `Cannot ${req.method} ${req.originalUrl}`,
